@@ -34,7 +34,7 @@ cipher8_t cipher8_from_rand(uint32_t* rand) {
 	return cipher8;
 }
 
-char make_integrity_byte(byte) {
+char make_integrity_byte(char byte) {
 	char tmp = (byte ^ 0x0c) & byte;
 	return ((~tmp & 0x67) | (tmp & 0x98)) ^ 0x6f | (tmp & 0x08);
 }
