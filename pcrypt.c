@@ -1,7 +1,24 @@
 #include "pcrypt.h"
+
 void shuffle2(uint32_t* vector);
 void unshuffle(uint32_t* vector);
 void unshuffle2(uint32_t* vector);
+
+#ifdef _WIN32
+	typedef	unsigned char	u_char;
+
+	uint32_t htonl(uint32_t x)
+	{
+		u_char *s = (u_char *)&x;
+		return (uint32_t)(s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3]);
+	}
+
+	uint32_t ntohl(uint32_t x)
+	{
+		u_char *s = (u_char *)&x;
+		return (uint32_t)(s[0] << 24 | s[1] << 16 | s[2] << 8 | s[3]);
+	}
+#endif
 
 uint8_t rotl8(uint8_t val, uint8_t bits) {
 	return ((val << bits) | (val >> (8 - bits))) & 0xff;
