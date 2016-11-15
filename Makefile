@@ -1,4 +1,5 @@
-CFLAGS += -Wno-bitwise-op-parentheses
+CC ?= clang
+CFLAGS += -Wno-bitwise-op-parentheses -fPIC -O3
 
 all: pcrypt.a
 
