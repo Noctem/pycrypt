@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := linux-native
 WIN32CC = i686-w64-mingw32-gcc
 WIN64CC = x86_64-w64-mingw32-gcc
 ARM32CC = arm-linux-gnueabihf-gcc
@@ -31,6 +32,9 @@ linux32: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 linux64: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 	$(CC) $(CFLAGS) -m64 -o libpcrypt-linux-x86-64.so pcrypt.c
 
+linux-native: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
+	$(CC) $(CFLAGS) -march=native -o libpcrypt.so pcrypt.c
+
 arm32: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 	$(ARM32CC) $(CFLAGS) -o libpcrypt-linux-arm32.so pcrypt.c
 
@@ -42,6 +46,9 @@ mac32: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 
 mac64: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 	$(BSDCC) $(BSDFLAGS) -m64 -march=core2 -mmacosx-version-min=10.7 -o libpcrypt-macos-x86-64.dylib pcrypt.c
+
+mac-native: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
+	$(BSDCC) $(CFLAGS) $(BSDFLAGS) -march=native -o libpcrypt.dylib pcrypt.c
 
 bsd32: pcrypt.c shuffle2.c unshuffle.c unshuffle2.c
 	$(BSDCC) $(BSDFLAGS) -m32 -o libpcrypt-freebsd-i386.so pcrypt.c
