@@ -51,7 +51,11 @@ cipher8_t cipher8_from_rand(uint32_t* rand) {
 	return cipher8;
 }
 
-char make_integrity_byte(char byte) {
+char make_integrity_byte1(char byte) {
+	return byte & 0xf3 | 0x08;
+}
+
+char make_integrity_byte2(char byte) {
 	return byte & 0xe3 | 0x10;
 }
 
@@ -62,11 +66,10 @@ char make_integrity_byte(char byte) {
  * output:   location to store encrypted payload
  * returns:  length of `output`
  *
- * note: This is "version 3". Encryption of previous versions is no longer supported.
  * note: This function will allocate memory for you, you must manually call `free` on `output` when
  *       you are done with it.
  */
-int encrypt(const char* input, size_t len, uint32_t ms, char** output) {
+int encrypt(const char* input, size_t len, uint32_t ms, char** output, char version) {
 
 	// Sanity checks
 	if (len == 0) {
@@ -94,7 +97,11 @@ int encrypt(const char* input, size_t len, uint32_t ms, char** output) {
 	cipher8_t cipher8_tmp = cipher8_from_rand(&ms);
 	uint8_t* cipher8 = cipher8_tmp.cipher;
 	uint32_t* cipher32 = (uint32_t*)cipher8;
-	output8[total_size - 1] = make_integrity_byte(gen_rand(&ms));
+	if (version == 2) {
+		output8[total_size - 1] = make_integrity_byte1(gen_rand(&ms));
+	} else {
+		output8[total_size - 1] = make_integrity_byte2(gen_rand(&ms));
+	}
 
 	// Encrypt in chunks of 256 bytes
 	for (size_t offset = 4; offset < total_size - 1; offset += 256) {
@@ -152,7 +159,7 @@ int decrypt(const char* input, size_t len, char** output) {
 		memcpy(*output, input + 4, output_len);
 		uint32_t ms = ntohl(((uint32_t*)input)[0]);
 		cipher8_tmp = cipher8_from_rand(&ms);
-		if (input[len - 1] != make_integrity_byte(gen_rand(&ms))) {
+		if (input[len - 1] != make_integrity_byte2(gen_rand(&ms) && input[len - 1] != make_integrity_byte1(gen_rand(&ms)))) {
 			return -3;
 		}
 	}
