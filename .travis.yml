@@ -1,23 +1,24 @@
 sudo: required
 dist: trusty
 language: python
-
+env:
+  global:
+    secure: eFpKve/cSHGptkPLWF0/hqzvWwidutKCV8mjy81W1tLXB5oCcGUf8T/TmD6Jl43qhjWvFYrH0x0qERrm/zGJTYBltEg+l3P6DETYYwBT+y2Z5J01zW7b1BIq3Kcnyww8OldyF8JeybD6at5lGRyTS1RqXsxvMLnLyH3ub+Oc2Q/wEf8yH6YvS4Wcn31twjCyL0RcX9bZUjvj3RmR9PQG+DYuibbVAAKvw9ZMcD2oh55NBY91ykrdBMv5qXrakpS8egqyCny3O5B3hZ2PMgiiyhRIdd64WX1/93jOm4PLy91/Qb4POy0hKyZL+pywwks/WAXikUyD1Ux7aBZalZWe8b0kNikoyO5HobmBOTiX+zuxlJEdUWs3rCFgY54lnlf/U3YWLYadXy09h3M4m1sR4zSXUXkviLWEvazYkF6DcKQIzo2+pEi6ON5NTvGx+sBRMP3VtSO/TFdgjPQ8ol68GUHYj8cyaWu6xEJx47iCTMo+sDv9hYHlSkzHGcV1SdoumeTXyVeWDADA5JBLoR+L66mTey0pHdG4pQ7ZtSTVM8kJasCc99inUhBrszBLeK129ZzjWb7+6VjEGMlx3YIq12MpsRV1cVxZgriw7XOKXthY7MvttQYr/KNUI+5ANhACQ5o323iqG8X8JJqObY7TpdVgOcv8l56QtNIY7/UXetw=
 matrix:
   include:
-    - services:
-        - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
-    - services:
-        - docker
-      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
-           PRE_CMD=linux32
-
+  - services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+  - services:
+    - docker
+    env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32
 install:
-  - docker pull $DOCKER_IMAGE
-
+- docker pull $DOCKER_IMAGE
 script:
-  - docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh
-  - ls wheelhouse/
+- docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh
+- ls wheelhouse/
+after_success:
+- travis/upload-wheels.sh
 
 deploy:
   provider: pypi
