@@ -19,14 +19,3 @@ script:
 - ls wheelhouse/
 after_success:
 - travis/upload-wheels.sh
-
-deploy:
-  provider: pypi
-  user: Noctem
-  password:
-    secure: gkysJLAbnYI4FgEEdUM+EHS3unhNNRRHGfQjFiuJNO1SfR2WYrJktmO/aqcs+2CNF0S5ipWw2KW0Gqps9ORPG0wjCw42Q2cAdO3xH6fDXU9m4shcZAENHr5dPO7/WZoGw4wwMmkQ1Mp4r5l/TNlET0if9XFc9EIOHYYji24iZOES+Jq9aF+Qq7QfKbYGRtHrGAU38jLpTJzjEjyVi1UowH91k9JaIY1PBip5mtLiLNFSCGkEG8tEPIHVfoDHDLA0z66Tcgy6f+EzWWjH8vXcDIHdsMmDbq6NvVfLQvaYW+6swjhTAfeNbueuSGJazEayUdCmT2xCYTiTYI6nbbdhHxnmefn+0HaWQCwgTwCTj2MGccvJbM567EdJEgKnPP94chgPrV5aJjeY5TTT7yYNlc7Nkac7/2VH4H6JGbRDlq0dCJMkKZ2VULN7mCq/rnTez2Jx7byBrlfC5va0Vl5sSvPDTdKX1dZ2EM1yLc6FjT8emb8bnr47Ym8x7gV1Wos2HraiEteWyMPNYgPuh/rfjyqPZhCfz0uafS5CDGTknDhJ5n4nABgjLBC1uzBvVacl6c/JbPWHtFOvvqx3HAzfvB21bo7I+aTBAItjMnlqJcRq7Gw1OqvoByebnkiK0xKI9ZaE/EWIk/Lw/QL5gbdYI6K67XPdNL54reZyN8cXZfA=
-  file: wheelhouse/*.whl
-  file_glob: true
-  on:
-    branch: travis
-    repo: Noctem/pycrypt
