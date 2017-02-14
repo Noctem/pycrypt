@@ -4,12 +4,12 @@ matrix:
   include:
   - os: linux
     language: python
-    dist: trusty
+    dist: precise
     python: 3.4
     env: DIST=TRUE
   - os: linux
     language: python
-    dist: precise
+    dist: trusty
     python: 3.5
   - os: linux
     dist: trusty
@@ -27,24 +27,11 @@ matrix:
         - clang-3.9
   - os: linux
     dist: trusty
-    python: 3.5
-    sudo: required
-    language: python
-    compiler: gcc
-    env: COMPILER=gcc-6 CC=gcc-6 DIST=TRUE
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        packages:
-        - gcc-6
-  - os: linux
-    dist: trusty
     python: 3.6
     sudo: required
     language: python
     compiler: gcc
-    env: COMPILER=gcc-6 CC=gcc-6 DIST=TRUE
+    env: COMPILER=gcc-6 CC=gcc-6
     addons:
       apt:
         sources:
@@ -57,7 +44,7 @@ matrix:
   - os: osx
     osx_image: xcode8.2
     language: generic
-    env: DIST=TRUE RELEASE=TRUE
+    env: RELEASE=TRUE
 
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == osx ]]; then brew update && brew install python3; fi
@@ -86,6 +73,6 @@ deploy:
       secure: gkysJLAbnYI4FgEEdUM+EHS3unhNNRRHGfQjFiuJNO1SfR2WYrJktmO/aqcs+2CNF0S5ipWw2KW0Gqps9ORPG0wjCw42Q2cAdO3xH6fDXU9m4shcZAENHr5dPO7/WZoGw4wwMmkQ1Mp4r5l/TNlET0if9XFc9EIOHYYji24iZOES+Jq9aF+Qq7QfKbYGRtHrGAU38jLpTJzjEjyVi1UowH91k9JaIY1PBip5mtLiLNFSCGkEG8tEPIHVfoDHDLA0z66Tcgy6f+EzWWjH8vXcDIHdsMmDbq6NvVfLQvaYW+6swjhTAfeNbueuSGJazEayUdCmT2xCYTiTYI6nbbdhHxnmefn+0HaWQCwgTwCTj2MGccvJbM567EdJEgKnPP94chgPrV5aJjeY5TTT7yYNlc7Nkac7/2VH4H6JGbRDlq0dCJMkKZ2VULN7mCq/rnTez2Jx7byBrlfC5va0Vl5sSvPDTdKX1dZ2EM1yLc6FjT8emb8bnr47Ym8x7gV1Wos2HraiEteWyMPNYgPuh/rfjyqPZhCfz0uafS5CDGTknDhJ5n4nABgjLBC1uzBvVacl6c/JbPWHtFOvvqx3HAzfvB21bo7I+aTBAItjMnlqJcRq7Gw1OqvoByebnkiK0xKI9ZaE/EWIk/Lw/QL5gbdYI6K67XPdNL54reZyN8cXZfA=
     distributions: sdist bdist_wheel
     on:
-      condition: "$DIST = TRUE"
+      condition: "$RELEASE = TRUE"
       tags: true
       repo: Noctem/pycrypt
