@@ -4,16 +4,13 @@ matrix:
   include:
   - os: linux
     language: python
-    dist: precise
+    dist: trusty
     python: 3.4
+    env: DIST=TRUE
   - os: linux
     language: python
-    dist: trusty
+    dist: precise
     python: 3.5
-  - os: linux
-    language: python
-    dist: trusty
-    python: 3.6
   - os: linux
     dist: trusty
     python: 3.6
@@ -28,6 +25,19 @@ matrix:
         - ubuntu-toolchain-r-test
         packages:
         - clang-3.9
+  - os: linux
+    dist: trusty
+    python: 3.5
+    sudo: required
+    language: python
+    compiler: gcc
+    env: COMPILER=gcc-6 CC=gcc-6 DIST=TRUE
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - gcc-6
   - os: linux
     dist: trusty
     python: 3.6
