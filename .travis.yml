@@ -1,77 +1,22 @@
-cache: pip
-
 matrix:
   include:
-  - os: linux
-    language: python
-    dist: precise
-    python: 3.4
-  - os: linux
-    language: python
-    dist: trusty
-    python: 3.5
-  - os: linux
-    dist: trusty
-    python: 3.6
-    sudo: required
-    language: python
-    compiler: clang
-    env: CC='clang-3.9'
-    addons:
-      apt:
-        sources:
-        - llvm-toolchain-trusty-3.9
-        - ubuntu-toolchain-r-test
-        packages:
-        - clang-3.9
-  - os: linux
-    dist: trusty
-    python: 3.6
-    sudo: required
-    language: python
-    compiler: gcc
-    env: COMPILER=gcc-6 CC=gcc-6 RELEASE=TRUE
-    addons:
-      apt:
-        sources:
-        - ubuntu-toolchain-r-test
-        packages:
-        - gcc-6
-  - os: osx
-    osx_image: xcode7.3
-    language: generic
-  - os: osx
-    osx_image: xcode8.2
-    language: generic
-
-before_install:
-- if [[ "$TRAVIS_OS_NAME" == osx ]]; then brew update && brew install python3; fi
-- if [[ -n $COMPILER ]]; then sudo update-alternatives --install /usr/bin/gcc gcc
-  "/usr/bin/${COMPILER}" 1; fi
+    - sudo: required
+      language: python
+      python: 3.6
+      services:
+        - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+    - sudo: required
+      language: python
+      python: 3.6
+      services:
+        - docker
+      env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
+           PRE_CMD=linux32
 
 install:
-- pip3 install -U setuptools wheel
-- python3 setup.py sdist bdist_wheel
-- python3 setup.py install
+  - docker pull $DOCKER_IMAGE
 
-script: python3 test.py
-
-deploy:
-  - provider: releases
-    file_glob: true
-    api_key:
-      secure: MbwoXIC8LlX5c4kXNaunmin8+deGU7ykaEghfikzU6rdVHvVRGcOZQwPI5457uFIA6/y90vkkFFdU0uzEC2uQJjKIpXO7j7ihe7vHgfuyh87kDUwdaJmkc9/uEOe+5QKaNZiCjjVZ/bR7MMWkSiI2ho9WC8L9V12NtLa94moa7R9FvRhuDdbcDO2fGUCCe1TIuPYiJXboqKDdzRg1cipni+2UFLLjJ1YNkuhvJ0PQ/XS3qrxyCOvTlOwmyAnJWFjgffqzpEbPjdOVTx4brf6plWnPatPyWH8+hD7e2mThR0Wh1s1Q4kZF1Sdhb6oBN4PrxZqyAiDS8dZg5Qazg9sfiU7pbbHSEHiM8+f8Mb5zsrc23+gLIrcWG/UM7RnDWegkJ8D0e99zfRYTurMYRRdIQP2GWc7zb7cLdyCruSRr6w0H1O4crrnpLV/WTaP3RsCWYTW3wBH26vkOKkXP6DFVz/QXA03JAdcbkNcZO7ndj5i1QYQX6MyTufp/EWwATn+EopupotGALACSgnR1OSY8+AoXcsY7IQLfzlAilIdn+vIDzbzMMYytI6UBn5K2GG1XwJPEOZ4wESHSrjHE1oaXMHuyxR6GzJd22pKNL+TAcyX7FnFEeQ+LRz2A6Q1JlVWD97J9x6RRpTXlrJLT0S1Bi0chlYu3jin4xUb8esHfAg=
-    file: dist/*.tar.gz
-    on:
-      condition: "$RELEASE = TRUE"
-      repo: Noctem/pycrypt
-      tags: true
-  - provider: pypi
-    user: Noctem
-    password:
-      secure: gkysJLAbnYI4FgEEdUM+EHS3unhNNRRHGfQjFiuJNO1SfR2WYrJktmO/aqcs+2CNF0S5ipWw2KW0Gqps9ORPG0wjCw42Q2cAdO3xH6fDXU9m4shcZAENHr5dPO7/WZoGw4wwMmkQ1Mp4r5l/TNlET0if9XFc9EIOHYYji24iZOES+Jq9aF+Qq7QfKbYGRtHrGAU38jLpTJzjEjyVi1UowH91k9JaIY1PBip5mtLiLNFSCGkEG8tEPIHVfoDHDLA0z66Tcgy6f+EzWWjH8vXcDIHdsMmDbq6NvVfLQvaYW+6swjhTAfeNbueuSGJazEayUdCmT2xCYTiTYI6nbbdhHxnmefn+0HaWQCwgTwCTj2MGccvJbM567EdJEgKnPP94chgPrV5aJjeY5TTT7yYNlc7Nkac7/2VH4H6JGbRDlq0dCJMkKZ2VULN7mCq/rnTez2Jx7byBrlfC5va0Vl5sSvPDTdKX1dZ2EM1yLc6FjT8emb8bnr47Ym8x7gV1Wos2HraiEteWyMPNYgPuh/rfjyqPZhCfz0uafS5CDGTknDhJ5n4nABgjLBC1uzBvVacl6c/JbPWHtFOvvqx3HAzfvB21bo7I+aTBAItjMnlqJcRq7Gw1OqvoByebnkiK0xKI9ZaE/EWIk/Lw/QL5gbdYI6K67XPdNL54reZyN8cXZfA=
-    distributions: sdist
-    on:
-      condition: "$RELEASE = TRUE"
-      tags: true
-      repo: Noctem/pycrypt
+script:
+  - docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh
+  - ls wheelhouse/
