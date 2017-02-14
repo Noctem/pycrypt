@@ -2,7 +2,7 @@
 set -e -x
 
 # Compile wheels
-for PYBIN in /opt/python/*/bin; do
+for PYBIN in /opt/python/cp3*/bin; do
     "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done
 
@@ -12,6 +12,6 @@ for whl in wheelhouse/*.whl; do
 done
 
 # Install packages and test
-for PYBIN in /opt/python/*/bin/; do
+for PYBIN in /opt/python/cp3*/bin/; do
     "${PYBIN}/pip" install pycrypt --no-index -f /io/wheelhouse
 done
