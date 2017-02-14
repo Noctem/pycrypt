@@ -1,15 +1,13 @@
+sudo: required
+dist: trusty
+language: python
+
 matrix:
   include:
-    - sudo: required
-      language: python
-      python: 3.6
-      services:
+    - services:
         - docker
       env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
-    - sudo: required
-      language: python
-      python: 3.6
-      services:
+    - services:
         - docker
       env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686
            PRE_CMD=linux32
@@ -29,4 +27,5 @@ deploy:
   file: wheelhouse/*.whl
   file_glob: true
   on:
+    branch: travis
     repo: Noctem/pycrypt
