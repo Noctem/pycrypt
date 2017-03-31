@@ -31,7 +31,7 @@ before_install:
 install: if [[ -z "$DOCKER_IMAGE" ]]; then python3 setup.py install; else docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; fi
 
 script:
-- if [[ -z "$DOCKER_IMAGE" ]]; python test.py; else docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; ls wheelhouse/; fi
+- if [[ -z "$DOCKER_IMAGE" ]]; then python3 test.py; else docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; ls wheelhouse/*; fi
 
 deploy:
   provider: script
