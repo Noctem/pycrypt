@@ -79,7 +79,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
 
   PyObject *output_bytes;
   output_bytes = PyBytes_FromStringAndSize((char *)output, output_size);
-
+  free(output);
   return output_bytes;
 }
 
