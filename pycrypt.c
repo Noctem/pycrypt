@@ -16,6 +16,9 @@
 
 #include <Python.h>
 #include "twofish.h"
+#ifdef _WIN32
+#include <malloc.h>
+#endif
 
 #define BLOCK_SIZE 16
 #define INTEGRITY_BYTE 0x21
@@ -49,7 +52,11 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
 
   int block_count = (len + 256) / 256;
   int output_size = 4 + (block_count * 256) + 1;
+#ifdef _WIN32
+  uint8_t * output = (uint8_t *)_malloca( output_size );
+#else
   uint8_t output[output_size];
+#endif
   output[0] = (ms >> 24);
   output[1] = (ms >> 16);
   output[2] = (ms >> 8);
@@ -69,7 +76,14 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
 
   output[output_size - 1] = INTEGRITY_BYTE;
 
-  return PyBytes_FromStringAndSize((char*)output, output_size);
+#ifdef _WIN32
+  PyObject *output_bytes;
+  output_bytes = PyBytes_FromStringAndSize((char *)output, output_size);
+  _freea( output );
+  return output_bytes;
+#else
+  return PyBytes_FromStringAndSize((char *)output, output_size);
+#endif
 }
 
 /* List of functions defined in the module */

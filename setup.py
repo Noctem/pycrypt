@@ -4,7 +4,7 @@ from sys import platform
 
 from setuptools import setup, Extension
 
-extra_args = [] if platform == 'win32' else ['-O3']
+extra_args = [] if platform == 'win32' else ['-O3', '-std=c99']
 
 pycrypt = Extension('pycrypt',
                   extra_compile_args = extra_args,
@@ -16,7 +16,7 @@ pycrypt = Extension('pycrypt',
                   language='c')
 
 setup (name = 'pycrypt',
-       version = '0.3.0',
+       version = '0.3.1',
        description = 'Fast TwoFish encryption.',
        long_description = 'A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
