@@ -170,7 +170,6 @@
  * Standard include files will probably be ok.
  */
 #include "twofish.h"
-#include <assert.h>
 #include <string.h> /* for memset(), memcpy(), and memcmp() */
 
 /*
@@ -212,8 +211,11 @@
  * header file could easily break it. Maybe the best solution is to use
  * a separate extern statement for your fatal function.
  */
-#define Twofish_fatal(pmsgx)                                                   \
-  { *((char *)0) = 0; }
+#define Twofish_fatal(msg)                                                     \
+  {                                                                            \
+    for (;;)                                                                   \
+      ;                                                                        \
+  }
 
 /*
  * The rest of the settings are not important for the functionality
@@ -258,10 +260,21 @@
  * For example, MS compilers have the __rotl and __rotr functions
  * that generate x86 rotation instructions.
  */
-#define UINT32_MASK ((((Twofish_UInt32)2) << 31) - 1)
-
+#define UINT32_MASK ((((UInt32)2) << 31) - 1)
 #define ROL32(x, n) ((x) << (n) | ((x)&UINT32_MASK) >> (32 - (n)))
-#define ROR32(x, n) ((x) >> (n) | ((x)&UINT32_MASK) << (32 - (n)))
+#define ROR32(x, n) ROL32((x), 32 - (n))
+
+/*
+ * Select data type for q-table entries.
+ *
+ * Larger entry types cost more memory (1.5 kB), and might be faster
+ * or slower depending on the CPU and compiler details.
+ *
+ * This choice only affects the static data size and the key setup speed.
+ * Functionality, expanded key size, or encryption speed are not affected.
+ * Define to 1 to get large q-table entries.
+ */
+#define LARGE_Q_TABLE 0 /* default = 0 */
 
 /*
  * Method to select a single byte from a UInt32.
@@ -356,9 +369,9 @@
  * in twofish.h instead.
  */
 /* A Byte must be an unsigned integer, 8 bits long. */
-// typedef Twofish_Byte    Byte;
+typedef Twofish_Byte Byte;
 /* A UInt32 must be an unsigned integer at least 32 bits long. */
-// typedef Twofish_UInt32  UInt32;
+typedef Twofish_UInt32 UInt32;
 
 /*
  * Define a macro ENDIAN_CONVERT.
@@ -367,7 +380,6 @@
  * machines, and is the identity function on little-endian machines.
  * The code then uses this macro without considering the endianness.
  */
-
 #if CPU_IS_BIG_ENDIAN
 #define ENDIAN_CONVERT(x) BSWAP(x)
 #else
@@ -384,7 +396,7 @@
  * than 4 bytes.
  */
 #if CPU_IS_BIG_ENDIAN
-#define BYTE_OFFSET(n) (sizeof(Twofish_UInt32) - 1 - (n))
+#define BYTE_OFFSET(n) (sizeof(UInt32) - 1 - (n))
 #else
 #define BYTE_OFFSET(n) (n)
 #endif
@@ -395,10 +407,10 @@
  */
 #if SELECT_BYTE_FROM_UINT32_IN_MEMORY
 /* Pick the byte from the memory in which X is stored. */
-#define SELECT_BYTE(X, b) (((Twofish_Byte *)(&(X)))[BYTE_OFFSET(b)])
+#define SELECT_BYTE(X, b) (((Byte *)(&(X)))[BYTE_OFFSET(b)])
 #else
 /* Portable solution: Pick the byte directly from the X value. */
-#define SELECT_BYTE(X, b) (((X) >> (8 * (b))) & 0xff)
+#define SELECT_BYTE(X, b) (((X) >> 8 * (b)) & 0xff)
 #endif
 
 /* Some shorthands because we use byte selection in large formulae. */
@@ -418,23 +430,22 @@
 #if CONVERT_USING_CASTS
 
 /* Get UInt32 from four bytes pointed to by p. */
-#define GET32(p) ENDIAN_CONVERT(*((Twofish_UInt32 *)(p)))
+#define GET32(p) ENDIAN_CONVERT(*((UInt32 *)(p)))
 /* Put UInt32 into four bytes pointed to by p */
-#define PUT32(v, p) *((Twofish_UInt32 *)(p)) = ENDIAN_CONVERT(v)
+#define PUT32(v, p) *((UInt32 *)(p)) = ENDIAN_CONVERT(v)
 
 #else
 
 /* Get UInt32 from four bytes pointed to by p. */
 #define GET32(p)                                                               \
-  ((Twofish_UInt32)((p)[0]) | (Twofish_UInt32)((p)[1]) << 8 |                  \
-   (Twofish_UInt32)((p)[2]) << 16 | (Twofish_UInt32)((p)[3]) << 24)
-
+  ((UInt32)((p)[0]) | (UInt32)((p)[1]) << 8 | (UInt32)((p)[2]) << 16 |         \
+   (UInt32)((p)[3]) << 24)
 /* Put UInt32 into four bytes pointed to by p */
 #define PUT32(v, p)                                                            \
-  (p)[0] = (Twofish_Byte)(((v)) & 0xff);                                       \
-  (p)[1] = (Twofish_Byte)(((v) >> 8) & 0xff);                                  \
-  (p)[2] = (Twofish_Byte)(((v) >> 16) & 0xff);                                 \
-  (p)[3] = (Twofish_Byte)(((v) >> 24) & 0xff)
+  (p)[0] = (Byte)(((v)) & 0xff);                                               \
+  (p)[1] = (Byte)(((v) >> 8) & 0xff);                                          \
+  (p)[2] = (Byte)(((v) >> 16) & 0xff);                                         \
+  (p)[3] = (Byte)(((v) >> 24) & 0xff)
 
 #endif
 
@@ -449,9 +460,9 @@
  */
 static void test_platform() {
   /* Buffer with test values. */
-  Twofish_Byte buf[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0};
-  Twofish_UInt32 C;
-  Twofish_UInt32 x, y;
+  Byte buf[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0};
+  UInt32 C;
+  UInt32 x, y;
   int i;
 
   /*
@@ -465,9 +476,12 @@ static void test_platform() {
    * The first check in each case is to make sure the size is correct.
    * The second check is to ensure that it is an unsigned type.
    */
-  assert(!(((Twofish_UInt32)((Twofish_UInt32)1 << 31) == 0) ||
-           ((Twofish_UInt32)-1 < 0)));
-  assert(!((sizeof(Twofish_Byte) != 1) || (((Twofish_Byte)-1) < 0)));
+  if ((UInt32)((UInt32)1 << 31) == 0 | (UInt32)-1 < 0) {
+    Twofish_fatal("Twofish code: Twofish_UInt32 type not suitable");
+  }
+  if (sizeof(Byte) != 1 | (Byte)-1 < 0) {
+    Twofish_fatal("Twofish code: Twofish_Byte type not suitable");
+  }
 
   /*
    * Sanity-check the endianness conversions.
@@ -492,8 +506,8 @@ static void test_platform() {
    * do not allow non-aligned accesses which we would do if you used
    * the CONVERT_USING_CASTS option.
    */
-  if ((GET32(buf) != 0x78563412UL) || (GET32(buf + 1) != 0x9a785634UL) ||
-      (GET32(buf + 2) != 0xbc9a7856UL) || (GET32(buf + 3) != 0xdebc9a78UL)) {
+  if (GET32(buf) != 0x78563412UL || GET32(buf + 1) != 0x9a785634UL ||
+      GET32(buf + 2) != 0xbc9a7856UL || GET32(buf + 3) != 0xdebc9a78UL) {
     Twofish_fatal("Twofish code: GET32 not implemented properly");
   }
 
@@ -536,8 +550,7 @@ static void test_platform() {
   }
 
   /* And we can test the b<i> macros which use SELECT_BYTE. */
-  if ((b0(C) != 0x12) || (b1(C) != 0x34) || (b2(C) != 0x56) ||
-      (b3(C) != 0x78)) {
+  if (b0(C) != 0x12 | b1(C) != 0x34 | b2(C) != 0x56 | b3(C) != 0x78) {
     /*
      * There are many reasons why this could fail.
      * Most likely is that CPU_IS_BIG_ENDIAN has the wrong value.
@@ -569,14 +582,13 @@ static void test_platform() {
  *  p       plaintext
  *  c       ciphertext
  */
-void Twofish::test_vector(Twofish_Byte key[], int key_len, Twofish_Byte p[16],
-                          Twofish_Byte c[16]) {
-  Twofish_Byte tmp[16]; /* scratch pad. */
-  TwofishKey xkey;      /* The expanded key */
+static void test_vector(Byte key[], int key_len, Byte p[16], Byte c[16]) {
+  Byte tmp[16];     /* scratch pad. */
+  Twofish_key xkey; /* The expanded key */
   int i;
 
   /* Prepare the key */
-  PrepareKey(key, key_len, &xkey);
+  Twofish_prepare_key(key, key_len, &xkey);
 
   /*
    * We run the test twice to ensure that the xkey structure
@@ -585,13 +597,13 @@ void Twofish::test_vector(Twofish_Byte key[], int key_len, Twofish_Byte p[16],
    */
   for (i = 0; i < 2; i++) {
     /* Encrypt and test */
-    Encrypt(&xkey, p, tmp);
+    Twofish_encrypt(&xkey, p, tmp);
     if (memcmp(c, tmp, 16) != 0) {
       Twofish_fatal("Twofish encryption failure");
     }
 
     /* Decrypt and test */
-    Decrypt(&xkey, c, tmp);
+    Twofish_decrypt(&xkey, c, tmp);
     if (memcmp(p, tmp, 16) != 0) {
       Twofish_fatal("Twofish decryption failure");
     }
@@ -607,7 +619,7 @@ void Twofish::test_vector(Twofish_Byte key[], int key_len, Twofish_Byte p[16],
  * This is an absolutely minimal self-test.
  * This routine does not test odd-sized keys.
  */
-void Twofish::test_vectors() {
+static void test_vectors() {
   /*
    * We run three tests, one for each major key length.
    * These test vectors come from the Twofish specification.
@@ -618,33 +630,33 @@ void Twofish::test_vectors() {
    */
 
   /* 128-bit test is the I=3 case of section B.2 of the Twofish book. */
-  static Twofish_Byte k128[] = {
+  static Byte k128[] = {
       0x9F, 0x58, 0x9F, 0x5C, 0xF6, 0x12, 0x2C, 0x32,
       0xB6, 0xBF, 0xEC, 0x2F, 0x2A, 0xE8, 0xC3, 0x5A,
   };
-  static Twofish_Byte p128[] = {0xD4, 0x91, 0xDB, 0x16, 0xE7, 0xB1, 0xC3, 0x9E,
-                                0x86, 0xCB, 0x08, 0x6B, 0x78, 0x9F, 0x54, 0x19};
-  static Twofish_Byte c128[] = {0x01, 0x9F, 0x98, 0x09, 0xDE, 0x17, 0x11, 0x85,
-                                0x8F, 0xAA, 0xC3, 0xA3, 0xBA, 0x20, 0xFB, 0xC3};
+  static Byte p128[] = {0xD4, 0x91, 0xDB, 0x16, 0xE7, 0xB1, 0xC3, 0x9E,
+                        0x86, 0xCB, 0x08, 0x6B, 0x78, 0x9F, 0x54, 0x19};
+  static Byte c128[] = {0x01, 0x9F, 0x98, 0x09, 0xDE, 0x17, 0x11, 0x85,
+                        0x8F, 0xAA, 0xC3, 0xA3, 0xBA, 0x20, 0xFB, 0xC3};
 
   /* 192-bit test is the I=4 case of section B.2 of the Twofish book. */
-  static Twofish_Byte k192[] = {0x88, 0xB2, 0xB2, 0x70, 0x6B, 0x10, 0x5E, 0x36,
-                                0xB4, 0x46, 0xBB, 0x6D, 0x73, 0x1A, 0x1E, 0x88,
-                                0xEF, 0xA7, 0x1F, 0x78, 0x89, 0x65, 0xBD, 0x44};
-  static Twofish_Byte p192[] = {0x39, 0xDA, 0x69, 0xD6, 0xBA, 0x49, 0x97, 0xD5,
-                                0x85, 0xB6, 0xDC, 0x07, 0x3C, 0xA3, 0x41, 0xB2};
-  static Twofish_Byte c192[] = {0x18, 0x2B, 0x02, 0xD8, 0x14, 0x97, 0xEA, 0x45,
-                                0xF9, 0xDA, 0xAC, 0xDC, 0x29, 0x19, 0x3A, 0x65};
+  static Byte k192[] = {0x88, 0xB2, 0xB2, 0x70, 0x6B, 0x10, 0x5E, 0x36,
+                        0xB4, 0x46, 0xBB, 0x6D, 0x73, 0x1A, 0x1E, 0x88,
+                        0xEF, 0xA7, 0x1F, 0x78, 0x89, 0x65, 0xBD, 0x44};
+  static Byte p192[] = {0x39, 0xDA, 0x69, 0xD6, 0xBA, 0x49, 0x97, 0xD5,
+                        0x85, 0xB6, 0xDC, 0x07, 0x3C, 0xA3, 0x41, 0xB2};
+  static Byte c192[] = {0x18, 0x2B, 0x02, 0xD8, 0x14, 0x97, 0xEA, 0x45,
+                        0xF9, 0xDA, 0xAC, 0xDC, 0x29, 0x19, 0x3A, 0x65};
 
   /* 256-bit test is the I=4 case of section B.2 of the Twofish book. */
-  static Twofish_Byte k256[] = {0xD4, 0x3B, 0xB7, 0x55, 0x6E, 0xA3, 0x2E, 0x46,
-                                0xF2, 0xA2, 0x82, 0xB7, 0xD4, 0x5B, 0x4E, 0x0D,
-                                0x57, 0xFF, 0x73, 0x9D, 0x4D, 0xC9, 0x2C, 0x1B,
-                                0xD7, 0xFC, 0x01, 0x70, 0x0C, 0xC8, 0x21, 0x6F};
-  static Twofish_Byte p256[] = {0x90, 0xAF, 0xE9, 0x1B, 0xB2, 0x88, 0x54, 0x4F,
-                                0x2C, 0x32, 0xDC, 0x23, 0x9B, 0x26, 0x35, 0xE6};
-  static Twofish_Byte c256[] = {0x6C, 0xB4, 0x56, 0x1C, 0x40, 0xBF, 0x0A, 0x97,
-                                0x05, 0x93, 0x1C, 0xB6, 0xD4, 0x08, 0xE7, 0xFA};
+  static Byte k256[] = {0xD4, 0x3B, 0xB7, 0x55, 0x6E, 0xA3, 0x2E, 0x46,
+                        0xF2, 0xA2, 0x82, 0xB7, 0xD4, 0x5B, 0x4E, 0x0D,
+                        0x57, 0xFF, 0x73, 0x9D, 0x4D, 0xC9, 0x2C, 0x1B,
+                        0xD7, 0xFC, 0x01, 0x70, 0x0C, 0xC8, 0x21, 0x6F};
+  static Byte p256[] = {0x90, 0xAF, 0xE9, 0x1B, 0xB2, 0x88, 0x54, 0x4F,
+                        0x2C, 0x32, 0xDC, 0x23, 0x9B, 0x26, 0x35, 0xE6};
+  static Byte c256[] = {0x6C, 0xB4, 0x56, 0x1C, 0x40, 0xBF, 0x0A, 0x97,
+                        0x05, 0x93, 0x1C, 0xB6, 0xD4, 0x08, 0xE7, 0xFA};
 
   /* Run the actual tests. */
   test_vector(k128, 16, p128, c128);
@@ -670,12 +682,12 @@ void Twofish::test_vectors() {
  * key_len      Number of bytes of key
  * final_value  Final plaintext value after 49 iterations
  */
-void Twofish::test_sequence(int key_len, Twofish_Byte final_value[]) {
-  Twofish_Byte buf[(50 + 3) * 16]; /* Buffer to hold our computation values. */
-  Twofish_Byte tmp[16];            /* Temp for testing the decryption. */
-  TwofishKey xkey;                 /* The expanded key */
+static void test_sequence(int key_len, Byte final_value[]) {
+  Byte buf[(50 + 3) * 16]; /* Buffer to hold our computation values. */
+  Byte tmp[16];            /* Temp for testing the decryption. */
+  Twofish_key xkey;        /* The expanded key */
   int i;
-  Twofish_Byte *p;
+  Byte *p;
 
   /* Wipe the buffer */
   memset(buf, 0, sizeof(buf));
@@ -692,13 +704,13 @@ void Twofish::test_sequence(int key_len, Twofish_Byte final_value[]) {
      * Prepare a key.
      * This automatically checks that key_len is valid.
      */
-    PrepareKey(p + 16, key_len, &xkey);
+    Twofish_prepare_key(p + 16, key_len, &xkey);
 
     /* Compute the next 16 bytes in the buffer */
-    Encrypt(&xkey, p, p - 16);
+    Twofish_encrypt(&xkey, p, p - 16);
 
     /* Check that the decryption is correct. */
-    Decrypt(&xkey, p - 16, tmp);
+    Twofish_decrypt(&xkey, p - 16, tmp);
     if (memcmp(tmp, p, 16) != 0) {
       Twofish_fatal("Twofish decryption failure in sequence");
     }
@@ -720,13 +732,13 @@ void Twofish::test_sequence(int key_len, Twofish_Byte final_value[]) {
  * This checks the most extensive test vectors currently available
  * for Twofish. The data is from the Twofish book, appendix B.2.
  */
-void Twofish::test_sequences() {
-  static Twofish_Byte r128[] = {0x5D, 0x9D, 0x4E, 0xEF, 0xFA, 0x91, 0x51, 0x57,
-                                0x55, 0x24, 0xF1, 0x15, 0x81, 0x5A, 0x12, 0xE0};
-  static Twofish_Byte r192[] = {0xE7, 0x54, 0x49, 0x21, 0x2B, 0xEE, 0xF9, 0xF4,
-                                0xA3, 0x90, 0xBD, 0x86, 0x0A, 0x64, 0x09, 0x41};
-  static Twofish_Byte r256[] = {0x37, 0xFE, 0x26, 0xFF, 0x1C, 0xF6, 0x61, 0x75,
-                                0xF5, 0xDD, 0xF4, 0xC3, 0x3B, 0x97, 0xA2, 0x05};
+static void test_sequences() {
+  static Byte r128[] = {0x5D, 0x9D, 0x4E, 0xEF, 0xFA, 0x91, 0x51, 0x57,
+                        0x55, 0x24, 0xF1, 0x15, 0x81, 0x5A, 0x12, 0xE0};
+  static Byte r192[] = {0xE7, 0x54, 0x49, 0x21, 0x2B, 0xEE, 0xF9, 0xF4,
+                        0xA3, 0x90, 0xBD, 0x86, 0x0A, 0x64, 0x09, 0x41};
+  static Byte r256[] = {0x37, 0xFE, 0x26, 0xFF, 0x1C, 0xF6, 0x61, 0x75,
+                        0xF5, 0xDD, 0xF4, 0xC3, 0x3B, 0x97, 0xA2, 0x05};
 
   /* Run the three sequence test vectors */
   test_sequence(16, r128);
@@ -745,10 +757,10 @@ void Twofish::test_sequences() {
  * If the expanded keys are identical, then the encryptions and decryptions
  * will behave the same.
  */
-void Twofish::test_odd_sized_keys() {
-  Twofish_Byte buf[32];
-  TwofishKey xkey;
-  TwofishKey xkey_two;
+static void test_odd_sized_keys() {
+  Byte buf[32];
+  Twofish_key xkey;
+  Twofish_key xkey_two;
   int i;
 
   /*
@@ -760,11 +772,11 @@ void Twofish::test_odd_sized_keys() {
    * itself.
    */
   memset(buf, 0, sizeof(buf));
-  PrepareKey(buf, 16, &xkey);
+  Twofish_prepare_key(buf, 16, &xkey);
 
   /* Fill buffer with pseudo-random data derived from two encryptions */
-  Encrypt(&xkey, buf, buf);
-  Encrypt(&xkey, buf, buf + 16);
+  Twofish_encrypt(&xkey, buf, buf);
+  Twofish_encrypt(&xkey, buf, buf + 16);
 
   /* Create all possible shorter keys that are prefixes of the buffer. */
   for (i = 31; i >= 0; i--) {
@@ -772,10 +784,10 @@ void Twofish::test_odd_sized_keys() {
     buf[i] = 0;
 
     /* Expand the key with only i bytes of length */
-    PrepareKey(buf, i, &xkey);
+    Twofish_prepare_key(buf, i, &xkey);
 
     /* Expand the corresponding padded key of regular length */
-    PrepareKey(buf, i <= 16 ? 16 : (i <= 24 ? 24 : 32), &xkey_two);
+    Twofish_prepare_key(buf, i <= 16 ? 16 : i <= 24 ? 24 : 32, &xkey_two);
 
     /* Compare the two */
     if (memcmp(&xkey, &xkey_two, sizeof(xkey)) != 0) {
@@ -799,7 +811,7 @@ void Twofish::test_odd_sized_keys() {
  * you could remove some of the tests. Make sure you did run them
  * once in the software and hardware configuration you are using.
  */
-void Twofish::self_test() {
+static void self_test() {
   /* The three test vectors form an absolute minimal test set. */
   test_vectors();
 
@@ -836,26 +848,46 @@ void Twofish::self_test() {
  * These are nibble-tables, but merging them and putting them two nibbles
  * in one byte is more work than it is worth.
  */
-static const Twofish_Byte t_table[2][4][16] = {
-    {{0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA,
-      0x4},
-     {0xE, 0xC, 0xB, 0x8, 0x1, 0x2, 0x3, 0x5, 0xF, 0x4, 0xA, 0x6, 0x7, 0x0, 0x9,
-      0xD},
-     {0xB, 0xA, 0x5, 0xE, 0x6, 0xD, 0x9, 0x0, 0xC, 0x8, 0xF, 0x3, 0x2, 0x4, 0x7,
-      0x1},
-     {0xD, 0x7, 0xF, 0x4, 0x1, 0x2, 0x6, 0xE, 0x9, 0xB, 0x3, 0x0, 0x8, 0x5, 0xC,
-      0xA}},
-    {{0x2, 0x8, 0xB, 0xD, 0xF, 0x7, 0x6, 0xE, 0x3, 0x1, 0x9, 0x4, 0x0, 0xA, 0xC,
-      0x5},
-     {0x1, 0xE, 0x2, 0xB, 0x4, 0xC, 0x3, 0x7, 0x6, 0xD, 0xA, 0x5, 0xF, 0x9, 0x0,
-      0x8},
-     {0x4, 0xC, 0x7, 0x5, 0x1, 0x6, 0x9, 0xA, 0x0, 0xE, 0xD, 0x8, 0x2, 0xB, 0x3,
-      0xF},
-     {0xB, 0x9, 0x5, 0x1, 0xC, 0x3, 0xD, 0xE, 0x6, 0x4, 0x7, 0xF, 0x2, 0x0, 0x8,
-      0xA}}};
+static Byte t_table[2][4][16] = {{{0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0,
+                                   0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4},
+                                  {0xE, 0xC, 0xB, 0x8, 0x1, 0x2, 0x3, 0x5, 0xF,
+                                   0x4, 0xA, 0x6, 0x7, 0x0, 0x9, 0xD},
+                                  {0xB, 0xA, 0x5, 0xE, 0x6, 0xD, 0x9, 0x0, 0xC,
+                                   0x8, 0xF, 0x3, 0x2, 0x4, 0x7, 0x1},
+                                  {0xD, 0x7, 0xF, 0x4, 0x1, 0x2, 0x6, 0xE, 0x9,
+                                   0xB, 0x3, 0x0, 0x8, 0x5, 0xC, 0xA}},
+                                 {{0x2, 0x8, 0xB, 0xD, 0xF, 0x7, 0x6, 0xE, 0x3,
+                                   0x1, 0x9, 0x4, 0x0, 0xA, 0xC, 0x5},
+                                  {0x1, 0xE, 0x2, 0xB, 0x4, 0xC, 0x3, 0x7, 0x6,
+                                   0xD, 0xA, 0x5, 0xF, 0x9, 0x0, 0x8},
+                                  {0x4, 0xC, 0x7, 0x5, 0x1, 0x6, 0x9, 0xA, 0x0,
+                                   0xE, 0xD, 0x8, 0x2, 0xB, 0x3, 0xF},
+                                  {0xB, 0x9, 0x5, 0x1, 0xC, 0x3, 0xD, 0xE, 0x6,
+                                   0x4, 0x7, 0xF, 0x2, 0x0, 0x8, 0xA}}};
 
 /* A 1-bit rotation of 4-bit values. Input must be in range 0..15 */
 #define ROR4BY1(x) (((x) >> 1) | (((x) << 3) & 0x8))
+
+/*
+ * The q-boxes are only used during the key schedule computations.
+ * These are 8->8 bit lookup tables. Some CPUs prefer to have 8->32 bit
+ * lookup tables as it is faster to load a 32-bit value than to load an
+ * 8-bit value and zero the rest of the register.
+ * The LARGE_Q_TABLE switch allows you to choose 32-bit entries in
+ * the q-tables. Here we just define the Qtype which is used to store
+ * the entries of the q-tables.
+ */
+#if LARGE_Q_TABLE
+typedef UInt32 Qtype;
+#else
+typedef Byte Qtype;
+#endif
+
+/*
+ * The actual q-box tables.
+ * There are two q-boxes, each having 256 entries.
+ */
+static Qtype q_table[2][256];
 
 /*
  * Now the function that converts a single t-table into a q-table.
@@ -864,7 +896,7 @@ static const Twofish_Byte t_table[2][4][16] = {
  * t[4][16] : four 4->4bit lookup tables that define the q-box
  * q[256]   : output parameter: the resulting q-box as a lookup table.
  */
-static void make_q_table(const Twofish_Byte t[4][16], Qtype q[256]) {
+static void make_q_table(Byte t[4][16], Qtype q[256]) {
   int ae, be, ao, bo; /* Some temporaries. */
   int i;
   /* Loop over all input values and compute the q-box result. */
@@ -894,7 +926,7 @@ static void make_q_table(const Twofish_Byte t[4][16], Qtype q[256]) {
 /*
  * Initialise both q-box tables.
  */
-void Twofish::initialise_q_boxes() {
+static void initialise_q_boxes() {
   /* Initialise each of the q-boxes using the t-tables */
   make_q_table(t_table[0], q_table[0]);
   make_q_table(t_table[1], q_table[1]);
@@ -930,13 +962,16 @@ void Twofish::initialise_q_boxes() {
  * also implements the q-box just previous to that column.
  */
 
+/* The actual MDS tables. */
+static UInt32 MDS_table[4][256];
+
 /* A small table to get easy conditional access to the 0xb4 constant. */
-static const Twofish_UInt32 mds_poly_divx_const[] = {0, 0xb4};
+static UInt32 mds_poly_divx_const[] = {0, 0xb4};
 
 /* Function to initialise the MDS tables. */
-void Twofish::initialise_mds_tables() {
+static void initialise_mds_tables() {
   int i;
-  Twofish_UInt32 q, qef, q5b; /* Temporary variables. */
+  UInt32 q, qef, q5b; /* Temporary variables. */
 
   /* Loop over all 8-bit input values */
   for (i = 0; i < 256; i++) {
@@ -970,8 +1005,8 @@ void Twofish::initialise_mds_tables() {
      * we can fill two of the entries in the MDS matrix table.
      * See the Twofish specifications for the order of the constants.
      */
-    MDS_table[1][i] = (q << 24) | (q5b << 16) | (qef << 8) | qef;
-    MDS_table[3][i] = (q5b << 24) | (qef << 16) | (q << 8) | q5b;
+    MDS_table[1][i] = q << 24 | q5b << 16 | qef << 8 | qef;
+    MDS_table[3][i] = q5b << 24 | qef << 16 | q << 8 | q5b;
 
     /* Now we do it all again for the two columns that have a q1 box. */
     q = q_table[1][i];
@@ -980,8 +1015,8 @@ void Twofish::initialise_mds_tables() {
     qef ^= q5b;
 
     /* The other two columns use the coefficient in a different order. */
-    MDS_table[0][i] = (qef << 24) | (qef << 16) | (q5b << 8) | q;
-    MDS_table[2][i] = (qef << 24) | (q << 16) | (qef << 8) | q5b;
+    MDS_table[0][i] = qef << 24 | qef << 16 | q5b << 8 | q;
+    MDS_table[2][i] = qef << 24 | q << 16 | qef << 8 | q5b;
   }
 }
 
@@ -1037,7 +1072,7 @@ void Twofish::initialise_mds_tables() {
  *          offsets 0,1,2,3, ... 8,9,10,11, [16,17,18,19, [24,25,26,27]]
  * kCycles  # key cycles, 2, 3, or 4.
  */
-Twofish_UInt32 Twofish::h(int k, Twofish_Byte L[], int kCycles) {
+static UInt32 h(int k, Byte L[], int kCycles) {
   switch (kCycles) {
   /* We code all 3 cases separately for speed reasons. */
   case 2:
@@ -1049,7 +1084,6 @@ Twofish_UInt32 Twofish::h(int k, Twofish_Byte L[], int kCycles) {
   default:
     /* This is always a coding error, which is fatal. */
     Twofish_fatal("Twofish h(): Illegal argument");
-    return 0;
   }
 }
 
@@ -1069,8 +1103,7 @@ Twofish_UInt32 Twofish::h(int k, Twofish_Byte L[], int kCycles) {
  * kCycles  number of key words, must be in the set {2,3,4}
  * xkey     pointer to Twofish_key structure that will contain the S-boxes.
  */
-void Twofish::fill_keyed_sboxes(Twofish_Byte S[], int kCycles,
-                                TwofishKey *xkey) {
+static void fill_keyed_sboxes(Byte S[], int kCycles, Twofish_key *xkey) {
   int i;
   switch (kCycles) {
   /* We code all 3 cases separately for speed reasons. */
@@ -1104,6 +1137,9 @@ void Twofish::fill_keyed_sboxes(Twofish_Byte S[], int kCycles,
   }
 }
 
+/* A flag to keep track of whether we have been initialised or not. */
+static int Twofish_initialised = 0;
+
 /*
  * Initialise the Twofish implementation.
  * This function must be called before any other function in the
@@ -1111,13 +1147,16 @@ void Twofish::fill_keyed_sboxes(Twofish_Byte S[], int kCycles,
  * This routine also does some sanity checks, to make sure that
  * all the macros behave, and it tests the whole cipher.
  */
-Twofish::Twofish() {
+void Twofish_initialise() {
   /* First test the various platform-specific definitions. */
   test_platform();
 
   /* We can now generate our tables, in the right order of course. */
   initialise_q_boxes();
   initialise_mds_tables();
+
+  /* We're finished with the initialisation itself. */
+  Twofish_initialised = 1;
 
   /*
    * And run some tests on the whole cipher.
@@ -1165,26 +1204,65 @@ static unsigned int rs_poly_div_const[] = {0, 0xa6};
  * xkey     Pointer to an Twofish_key structure that will be filled
  *             with the internal form of the cipher key.
  */
-void Twofish::PrepareKey(const Twofish_Byte key[], int key_len,
-                         TwofishKey *xkey) {
+void Twofish_prepare_key(Byte key[], int key_len, Twofish_key *xkey) {
   /* We use a single array to store all key material in,
    * to simplify the wiping of the key material at the end.
    * The first 32 bytes contain the actual (padded) cipher key.
    * The next 32 bytes contain the S-vector in its weird format,
    * and we have 4 bytes of overrun necessary for the RS-reduction.
    */
-  Twofish_Byte K[32 + 32 + 4];
+  Byte K[32 + 32 + 4];
 
   int kCycles; /* # key cycles, 2,3, or 4. */
 
   int i;
-  Twofish_UInt32 A, B; /* Used to compute the round keys. */
+  UInt32 A, B; /* Used to compute the round keys. */
 
-  Twofish_Byte *kptr; /* Three pointers for the RS computation. */
-  Twofish_Byte *sptr;
-  Twofish_Byte *t;
+  Byte *kptr; /* Three pointers for the RS computation. */
+  Byte *sptr;
+  Byte *t;
 
-  Twofish_Byte b, bx, bxx; /* Some more temporaries for the RS computation. */
+  Byte b, bx, bxx; /* Some more temporaries for the RS computation. */
+
+  /* Check that the Twofish implementation was initialised. */
+  if (Twofish_initialised == 0) {
+    /*
+     * You didn't call Twofish_initialise before calling this routine.
+     * This is a programming error, and therefore we call the fatal
+     * routine.
+     *
+     * I could of course call the initialisation routine here,
+     * but there are a few reasons why I don't. First of all, the
+     * self-tests have to be done at startup. It is no good to inform
+     * the user that the cipher implementation fails when he wants to
+     * write his data to disk in encrypted form. You have to warn him
+     * before he spends time typing his data. Second, the initialisation
+     * and self test are much slower than a single key expansion.
+     * Calling the initialisation here makes the performance of the
+     * cipher unpredictable. This can lead to really weird problems
+     * if you use the cipher for a real-time task. Suddenly it fails
+     * once in a while the first time you try to use it. Things like
+     * that are almost impossible to debug.
+     */
+    Twofish_fatal("Twofish implementation was not initialised.");
+
+    /*
+     * There is always a danger that the Twofish_fatal routine returns,
+     * in spite of the specifications that it should not.
+     * (A good programming rule: don't trust the rest of the code.)
+     * This would be disasterous. If the q-tables and MDS-tables have
+     * not been initialised, they are probably still filled with zeroes.
+     * Suppose the MDS-tables are all zero. The key expansion would then
+     * generate all-zero round keys, and all-zero s-boxes. The danger
+     * is that nobody would notice as the encryption function still
+     * mangles the input, and the decryption still 'decrypts' it,
+     * but now in a completely key-independent manner.
+     * To stop such security disasters, we use blunt force.
+     * If your program hangs here: fix the fatal routine!
+     */
+    for (;;)
+      ; /* Infinite loop, which beats being insecure. */
+  }
 
   /* Check for valid key length. */
   if (key_len < 0 || key_len > 32) {
@@ -1330,8 +1408,8 @@ void Twofish::PrepareKey(const Twofish_Byte key[], int key_len,
        * bx = (x) * b
        * bxx= (x + 1/x) * b
        */
-      bx = (Twofish_Byte)((b << 1) ^ rs_poly_const[b >> 7]);
-      bxx = (Twofish_Byte)((b >> 1) ^ rs_poly_div_const[b & 1] ^ bx);
+      bx = (Byte)((b << 1) ^ rs_poly_const[b >> 7]);
+      bxx = (Byte)((b >> 1) ^ rs_poly_div_const[b & 1] ^ bx);
 
       /*
        * Subtract suitable multiple of
@@ -1418,7 +1496,7 @@ void Twofish::PrepareKey(const Twofish_Byte key[], int key_len,
 
 /*
  * A single round of Twofish for decryption. It differs from
- * ENCRYPT_RND only because of the 1-bit rotations.
+ * ENCRYTP_RND only because of the 1-bit rotations.
  */
 #define DECRYPT_RND(A, B, C, D, T0, T1, xkey, r)                               \
   T0 = g0(A, xkey);                                                            \
@@ -1482,9 +1560,8 @@ void Twofish::PrepareKey(const Twofish_Byte key[], int key_len,
  * p            16 bytes of plaintext
  * c            16 bytes in which to store the ciphertext
  */
-void Twofish::Encrypt(const TwofishKey *xkey, const Twofish_Byte p[16],
-                      Twofish_Byte c[16]) {
-  Twofish_UInt32 A, B, C, D, T0, T1; /* Working variables */
+void Twofish_encrypt(Twofish_key *xkey, Byte p[16], Byte c[16]) {
+  UInt32 A, B, C, D, T0, T1; /* Working variables */
 
   /* Get the four plaintext words xorred with the key */
   GET_INPUT(p, A, B, C, D, xkey, 0);
@@ -1501,12 +1578,11 @@ void Twofish::Encrypt(const TwofishKey *xkey, const Twofish_Byte p[16],
  *
  * Arguments:
  * xkey         expanded key array
- * c            16 bytes of ciphertext
- * p            16 bytes in which to store the plaintext
+ * p            16 bytes of plaintext
+ * c            16 bytes in which to store the ciphertext
  */
-void Twofish::Decrypt(const TwofishKey *xkey, const Twofish_Byte c[16],
-                      Twofish_Byte p[16]) {
-  Twofish_UInt32 A, B, C, D, T0, T1; /* Working variables */
+void Twofish_decrypt(Twofish_key *xkey, Byte c[16], Byte p[16]) {
+  UInt32 A, B, C, D, T0, T1; /* Working variables */
 
   /* Get the four plaintext words xorred with the key */
   GET_INPUT(c, A, B, C, D, xkey, 4);
@@ -1517,8 +1593,6 @@ void Twofish::Decrypt(const TwofishKey *xkey, const Twofish_Byte c[16],
   /* Store them with the final swap and the output whitening. */
   PUT_OUTPUT(C, D, A, B, p, xkey, 0);
 }
-
-void TwofishKey::Clear() { memset(this, 0, sizeof(*this)); }
 
 /*
  * Using the macros it is easy to make special routines for

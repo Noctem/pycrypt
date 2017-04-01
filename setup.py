@@ -10,13 +10,13 @@ pycrypt = Extension('pycrypt',
                   extra_compile_args = extra_args,
                   extra_link_args = extra_args,
                   sources = [
-                      'pycrypt.cpp',
-                      'twofish.cpp'
+                      'pycrypt.c',
+                      'twofish.c'
                   ],
-                  language='c++')
+                  language='c')
 
 setup (name = 'pycrypt',
-       version = '0.2.0',
+       version = '0.3.0',
        description = 'Fast TwoFish encryption.',
        long_description = 'A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
