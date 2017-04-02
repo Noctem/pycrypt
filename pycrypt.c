@@ -23,6 +23,11 @@
 #define BLOCK_SIZE 16
 #define INTEGRITY_BYTE 0x21
 #define KEY_SIZE 32
+#if PY_MAJOR_VERSION >= 3
+#define ARG_TYPES "y#I"
+#else
+#define ARG_TYPES "s#I"
+#endif
 
 Twofish_Byte enc_key[KEY_SIZE] = { // 1.29.1
     0x4F, 0xEB, 0x1C, 0xA5, 0xF6, 0x1A, 0x67, 0xCE, 0x43, 0xF3, 0xF0,
@@ -35,7 +40,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   Py_ssize_t len;
   uint32_t ms;
 
-  if (!PyArg_ParseTuple(args, "y#I", &input, &len, &ms)) {
+  if (!PyArg_ParseTuple(args, ARG_TYPES, &input, &len, &ms)) {
     return NULL;
   }
 
@@ -92,6 +97,7 @@ static PyMethodDef PycryptMethods[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
+#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef pycryptmodule = {
     PyModuleDef_HEAD_INIT, "pycrypt", /* name of module */
     NULL,                             /* module documentation, may be NULL */
@@ -99,7 +105,27 @@ static struct PyModuleDef pycryptmodule = {
                                          or -1 if the module keeps state in global variables. */
     PycryptMethods};
 
-PyMODINIT_FUNC PyInit_pycrypt(void) {
+#define INITERROR return NULL
+
+PyMODINIT_FUNC
+PyInit_pycrypt(void)
+
+#else
+#define INITERROR return
+
+void
+initpycrypt(void)
+#endif
+{
   Twofish_initialise();
-  return PyModule_Create(&pycryptmodule);
+#if PY_MAJOR_VERSION >= 3
+  PyObject *module = PyModule_Create(&pycryptmodule);
+#else
+  PyObject *module = Py_InitModule("pycrypt", PycryptMethods);
+#endif
+  if (module == NULL)
+    INITERROR;
+#if PY_MAJOR_VERSION >= 3
+  return module;
+#endif
 }
