@@ -26,5 +26,5 @@ artifacts:
 deploy_script:
 - ps: >-
     if($env:appveyor_repo_tag -eq 'True') {
-      Invoke-Expression "$env:PYTHON\\python.exe -m twine upload dist/*.whl --username Noctem --password $env:PASS" --skip-existing
+      Invoke-Expression "$env:PYTHON\\python.exe -m twine upload dist/*.whl --username Noctem --password $env:PASS"
     }
