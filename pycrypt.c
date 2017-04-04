@@ -17,7 +17,12 @@
 #include <Python.h>
 #include "twofish.h"
 #ifdef _WIN32
+#if (_MSC_VER < 1000)
+typedef unsigned char uint8_t;
+typedef unsigned int uint32_t;
+#else
 #include <stdint.h>
+#endif
 #include <malloc.h>
 #endif
 
@@ -42,8 +47,8 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   uint32_t ms, state;
   Twofish_key key;
   uint8_t xor_byte[BLOCK_SIZE];
-  unsigned char i;
-  unsigned short offset;
+  unsigned char i, block_count;
+  unsigned short offset, output_size;
 #ifdef _WIN32
   uint8_t * output;
   PyObject *output_bytes;
@@ -62,8 +67,8 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
     xor_byte[i] = (state >> 16) & 0x7FFF;
   }
 
-  unsigned char block_count = (len + 256) / 256;
-  unsigned short output_size = 4 + (block_count * 256) + 1;
+  block_count = (len + 256) / 256;
+  output_size = 4 + (block_count * 256) + 1;
 
 #ifdef _WIN32
   output = (uint8_t *)_malloca( output_size );
