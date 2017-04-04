@@ -16,7 +16,7 @@ pycrypt = Extension('pycrypt',
                   language='c')
 
 setup (name = 'pycrypt',
-       version = '0.4.0',
+       version = '0.5.0',
        description = 'Fast TwoFish encryption.',
        long_description = 'A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',

@@ -3,16 +3,18 @@
 set -e
 
 macbuild() {
-	pip3 install -U twine setuptools wheel
+	PYTHON="python${1}"
+	PIP="pip${1}"
+	"$PIP" install -U twine setuptools wheel
 	rm -rf dist build
-	if [[ "$1" = "sdist" && "$SOURCE" = TRUE ]]; then
-		python3 setup.py sdist bdist_wheel
+	if [[ "$2" = "sdist" && "$SOURCE" = TRUE ]]; then
+		"$PYTHON" setup.py sdist bdist_wheel
 	else
-		python3 setup.py bdist_wheel
+		"$PYTHON" setup.py bdist_wheel
 	fi
-	python3 setup.py install
-	python3 test.py
-	if [[ "$1" = "sdist" && "$SOURCE" = TRUE ]]; then
+	"$PYTHON" setup.py install
+	"$PYTHON" test.py
+	if [[ "$2" = "sdist" && "$SOURCE" = TRUE ]]; then
 		twine upload --skip-existing --config-file .pypirc -r pypi dist/*.whl dist/*.tar.*
 	else
 		twine upload --skip-existing --config-file .pypirc -r pypi dist/*.whl
@@ -26,8 +28,11 @@ if [[ "$DOCKER_IMAGE" ]]; then
 	twine upload --skip-existing --config-file .pypirc -r pypi wheelhouse/*.whl
 	echo "Successfully uploaded Linux wheels."
 else
-	macbuild sdist
+	macbuild 3 sdist
 	echo "Successfully uploaded Python 3.6 wheel and source."
+
+	brew install python
+	macbuild 2
 
 	cd travis
 	brew uninstall python3
@@ -35,7 +40,6 @@ else
 	cd ..
 	echo "Successfully installed Python 3.5."
 
-	pip3 install -U twine
-	macbuild
+	macbuild 3
 	echo "Successfully uploaded Python 3.5 wheel."
 fi
