@@ -10,6 +10,13 @@
  * in the source code of this or any derived work.
  */
 
+#if defined (_MSC_VER) && (_MSC_VER < 1600)
+typedef unsigned char uint8_t;
+typedef unsigned int uint32_t;
+#else
+#include <stdint.h>
+#endif
+
 /*
  * PLATFORM FIXES
  * ==============
@@ -27,7 +34,7 @@
  * It must also be the elementary data size of your C platform,
  * i.e. sizeof( Twofish_Byte ) == 1.
  */
-typedef unsigned char Twofish_Byte;
+typedef uint8_t Twofish_Byte;
 
 /*
  * A Twofish_UInt32 must be an unsigned integer of at least 32 bits.
@@ -36,7 +43,7 @@ typedef unsigned char Twofish_Byte;
  * would not appear in the header file, but it is used inside the
  * Twofish_key structure which means it has to be included here.
  */
-typedef unsigned int Twofish_UInt32;
+typedef uint32_t Twofish_UInt32;
 
 /*
  * END OF PLATFORM FIXES

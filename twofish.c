@@ -261,8 +261,15 @@
  * that generate x86 rotation instructions.
  */
 #define UINT32_MASK ((((UInt32)2) << 31) - 1)
+#ifndef ROL32
+#ifdef _MSC_VER
+#define ROL32(x, n) _rotl(x, n)
+#define ROR32(x, n) _rotr(x, n)
+#else
 #define ROL32(x, n) ((x) << (n) | ((x)&UINT32_MASK) >> (32 - (n)))
 #define ROR32(x, n) ROL32((x), 32 - (n))
+#endif
+#endif
 
 /*
  * Select data type for q-table entries.
@@ -476,10 +483,10 @@ static void test_platform() {
    * The first check in each case is to make sure the size is correct.
    * The second check is to ensure that it is an unsigned type.
    */
-  if ((UInt32)((UInt32)1 << 31) == 0 | (UInt32)-1 < 0) {
+  if (((UInt32)((UInt32)1 << 31) == 0) || ((UInt32)-1 < 0)) {
     Twofish_fatal("Twofish code: Twofish_UInt32 type not suitable");
   }
-  if (sizeof(Byte) != 1 | (Byte)-1 < 0) {
+  if ((sizeof(Byte) != 1) || ((Byte)-1 < 0)) {
     Twofish_fatal("Twofish code: Twofish_Byte type not suitable");
   }
 
@@ -541,7 +548,7 @@ static void test_platform() {
   }
 
   /* Test the BSWAP macro */
-  if (BSWAP(C) != 0x12345678UL) {
+  if ((BSWAP(C)) != 0x12345678UL) {
     /*
      * The BSWAP macro should always work, even if you are not using it.
      * A smart optimising compiler will just remove this entire test.
@@ -550,7 +557,7 @@ static void test_platform() {
   }
 
   /* And we can test the b<i> macros which use SELECT_BYTE. */
-  if (b0(C) != 0x12 | b1(C) != 0x34 | b2(C) != 0x56 | b3(C) != 0x78) {
+  if ((b0(C) != 0x12) || (b1(C) != 0x34) || (b2(C) != 0x56) || (b3(C) != 0x78)) {
     /*
      * There are many reasons why this could fail.
      * Most likely is that CPU_IS_BIG_ENDIAN has the wrong value.

@@ -17,12 +17,6 @@
 #include <Python.h>
 #include "twofish.h"
 #ifdef _WIN32
-#if (_MSC_VER < 1600)
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-#else
-#include <stdint.h>
-#endif
 #include <malloc.h>
 #endif
 
@@ -41,16 +35,17 @@ Twofish_Byte enc_key[KEY_SIZE] = { // 1.29.1
     0x8F, 0x5A, 0x3B, 0x51, 0x2E, 0xA9, 0x47, 0x38, 0xC4, 0x14,
 };
 
+Twofish_key KEY;
+
 static PyObject *pycrypt(PyObject *self, PyObject *args) {
   const char *input;
   Py_ssize_t len;
-  uint32_t ms, state;
-  Twofish_key key;
-  uint8_t xor_byte[BLOCK_SIZE];
-  unsigned char i, block_count;
+  Twofish_UInt32 ms, state;
+
+  Twofish_Byte xor_byte[BLOCK_SIZE], i, block_count;
   unsigned short offset, output_size;
 #ifdef _WIN32
-  uint8_t * output;
+  Twofish_Byte * output;
   PyObject *output_bytes;
 #endif
 
@@ -59,8 +54,6 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   }
 
   state = ms;
-
-  Twofish_prepare_key(enc_key, KEY_SIZE, &key);
 
   for (i = 0; i < BLOCK_SIZE; ++i) {
     state = (0x41C64E6D * state) + 0x3039;
@@ -71,9 +64,9 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   output_size = 4 + (block_count * 256) + 1;
 
 #ifdef _WIN32
-  output = (uint8_t *)_malloca( output_size );
+  output = (Twofish_Byte *)_malloca( output_size );
 #else
-  uint8_t output[output_size];
+  Twofish_Byte output[output_size];
 #endif
 
   output[0] = (ms >> 24);
@@ -82,13 +75,13 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   output[3] = ms;
   memcpy(output + 4, input, len);
   memset(output + 4 + len, 0, 256 - len % 256);
-  output[output_size - 2] = (uint8_t)(256 - len % 256);
+  output[output_size - 2] = (Twofish_Byte)(256 - len % 256);
 
   for (offset = 0; offset < block_count * 256; offset += BLOCK_SIZE) {
     for (i = 0; i < BLOCK_SIZE; i++)
       output[4 + offset + i] ^= xor_byte[i];
 
-    Twofish_encrypt(&key, output + 4 + offset, output + 4 + offset);
+    Twofish_encrypt(&KEY, output + 4 + offset, output + 4 + offset);
 
     memcpy(xor_byte, output + 4 + offset, BLOCK_SIZE);
   }
@@ -132,6 +125,7 @@ initpycrypt(void)
 {
   PyObject *module;
   Twofish_initialise();
+  Twofish_prepare_key(enc_key, KEY_SIZE, &KEY);
 #if PY_MAJOR_VERSION >= 3
   module = PyModule_Create(&pycryptmodule);
 #else
