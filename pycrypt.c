@@ -42,11 +42,11 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   uint32_t ms, state;
   Twofish_key key;
   uint8_t xor_byte[BLOCK_SIZE];
+  unsigned char i;
+  unsigned short offset;
 #ifdef _WIN32
   uint8_t * output;
   PyObject *output_bytes;
-#else
-  uint8_t output[output_size];
 #endif
 
   if (!PyArg_ParseTuple(args, ARG_TYPES, &input, &len, &ms)) {
@@ -57,16 +57,18 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
 
   Twofish_prepare_key(enc_key, KEY_SIZE, &key);
 
-  for (int i = 0; i < BLOCK_SIZE; ++i) {
+  for (i = 0; i < BLOCK_SIZE; ++i) {
     state = (0x41C64E6D * state) + 0x3039;
     xor_byte[i] = (state >> 16) & 0x7FFF;
   }
 
-  unsigned short block_count = (len + 256) / 256;
+  unsigned char block_count = (len + 256) / 256;
   unsigned short output_size = 4 + (block_count * 256) + 1;
 
 #ifdef _WIN32
   output = (uint8_t *)_malloca( output_size );
+#else
+  uint8_t output[output_size];
 #endif
 
   output[0] = (ms >> 24);
@@ -77,8 +79,8 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   memset(output + 4 + len, 0, 256 - len % 256);
   output[output_size - 2] = (uint8_t)(256 - len % 256);
 
-  for (unsigned short offset = 0; offset < block_count * 256; offset += BLOCK_SIZE) {
-    for (unsigned short i = 0; i < BLOCK_SIZE; i++)
+  for (offset = 0; offset < block_count * 256; offset += BLOCK_SIZE) {
+    for (i = 0; i < BLOCK_SIZE; i++)
       output[4 + offset + i] ^= xor_byte[i];
 
     Twofish_encrypt(&key, output + 4 + offset, output + 4 + offset);
