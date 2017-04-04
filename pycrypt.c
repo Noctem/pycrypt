@@ -17,7 +17,7 @@
 #include <Python.h>
 #include "twofish.h"
 #ifdef _WIN32
-#if (_MSC_VER < 1000)
+#if (_MSC_VER < 1600)
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
 #else
@@ -130,12 +130,14 @@ void
 initpycrypt(void)
 #endif
 {
+  PyObject *module;
   Twofish_initialise();
 #if PY_MAJOR_VERSION >= 3
-  PyObject *module = PyModule_Create(&pycryptmodule);
+  module = PyModule_Create(&pycryptmodule);
 #else
-  PyObject *module = Py_InitModule("pycrypt", PycryptMethods);
+  module = Py_InitModule("pycrypt", PycryptMethods);
 #endif
+
   if (module == NULL)
     INITERROR;
 #if PY_MAJOR_VERSION >= 3
