@@ -1,0 +1,30 @@
+version: 0.4.0-{build}
+environment:
+  PASS:
+    secure: y/ZzELXah34vmsOHWCwMZhrpW0SHo+M6ddPOYZaKzd8=
+  matrix:
+  - PYTHON: C:\Python27
+  - PYTHON: C:\Python27-x64
+  - PYTHON: C:\Python34
+  - PYTHON: C:\Python34-x64
+  - PYTHON: C:\Python35
+  - PYTHON: C:\Python35-x64
+  - PYTHON: C:\Python36
+  - PYTHON: C:\Python36-x64
+install:
+- cmd: '%PYTHON%\\python.exe -m pip install -U wheel twine setuptools'
+build_script:
+- cmd: >-
+    %PYTHON%\\python.exe setup.py install
+
+    %PYTHON%\\python.exe setup.py bdist_wheel
+test_script:
+- cmd: '%PYTHON%\\python.exe test.py'
+artifacts:
+- path: dist\*.whl
+  name: Wheel
+deploy_script:
+- ps: >-
+    if($env:appveyor_repo_tag -eq 'True') {
+      Invoke-Expression "$env:PYTHON\\python.exe -m twine upload dist/*.whl --username Noctem --password $env:PASS" --skip-existing
+    }
