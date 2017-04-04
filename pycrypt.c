@@ -43,7 +43,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   Twofish_key key;
   uint8_t xor_byte[BLOCK_SIZE];
 #ifdef _WIN32
-  uint8_t * output = (uint8_t *)_malloca( output_size );
+  uint8_t * output;
   PyObject *output_bytes;
 #else
   uint8_t output[output_size];
