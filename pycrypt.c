@@ -39,30 +39,36 @@ Twofish_Byte enc_key[KEY_SIZE] = { // 1.29.1
 static PyObject *pycrypt(PyObject *self, PyObject *args) {
   const char *input;
   Py_ssize_t len;
-  uint32_t ms;
+  uint32_t ms, state;
+  Twofish_key key;
+  uint8_t xor_byte[BLOCK_SIZE];
+#ifdef _WIN32
+  uint8_t * output = (uint8_t *)_malloca( output_size );
+  PyObject *output_bytes;
+#else
+  uint8_t output[output_size];
+#endif
 
   if (!PyArg_ParseTuple(args, ARG_TYPES, &input, &len, &ms)) {
     return NULL;
   }
 
-  uint32_t state = ms;
+  state = ms;
 
-  Twofish_key key;
   Twofish_prepare_key(enc_key, KEY_SIZE, &key);
 
-  uint8_t xor_byte[BLOCK_SIZE] = { 0, };
   for (int i = 0; i < BLOCK_SIZE; ++i) {
     state = (0x41C64E6D * state) + 0x3039;
     xor_byte[i] = (state >> 16) & 0x7FFF;
   }
 
-  int block_count = (len + 256) / 256;
-  int output_size = 4 + (block_count * 256) + 1;
+  unsigned short block_count = (len + 256) / 256;
+  unsigned short output_size = 4 + (block_count * 256) + 1;
+
 #ifdef _WIN32
-  uint8_t * output = (uint8_t *)_malloca( output_size );
-#else
-  uint8_t output[output_size];
+  output = (uint8_t *)_malloca( output_size );
 #endif
+
   output[0] = (ms >> 24);
   output[1] = (ms >> 16);
   output[2] = (ms >> 8);
@@ -71,8 +77,8 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   memset(output + 4 + len, 0, 256 - len % 256);
   output[output_size - 2] = (uint8_t)(256 - len % 256);
 
-  for (int offset = 0; offset < block_count * 256; offset += BLOCK_SIZE) {
-    for (int i = 0; i < BLOCK_SIZE; i++)
+  for (unsigned short offset = 0; offset < block_count * 256; offset += BLOCK_SIZE) {
+    for (unsigned short i = 0; i < BLOCK_SIZE; i++)
       output[4 + offset + i] ^= xor_byte[i];
 
     Twofish_encrypt(&key, output + 4 + offset, output + 4 + offset);
@@ -83,7 +89,6 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   output[output_size - 1] = INTEGRITY_BYTE;
 
 #ifdef _WIN32
-  PyObject *output_bytes;
   output_bytes = PyBytes_FromStringAndSize((char *)output, output_size);
   _freea( output );
   return output_bytes;
