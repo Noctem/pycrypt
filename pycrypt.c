@@ -17,6 +17,7 @@
 #include <Python.h>
 #include "twofish.h"
 #ifdef _WIN32
+#include <stdint.h>
 #include <malloc.h>
 #endif
 
