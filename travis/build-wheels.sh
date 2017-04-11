@@ -15,5 +15,5 @@ done
 # Install packages and test
 for PYBIN in /opt/python/cp*/bin/; do
 	"${PYBIN}/pip" install pycrypt --no-index -f /io/wheelhouse
-	"${PYBIN}/python" test_pycrypt.py
+	"${PYBIN}/python" /io/test_pycrypt.py
 done
