@@ -13,7 +13,7 @@ macbuild() {
 		"$PYTHON" setup.py bdist_wheel
 	fi
 	"$PYTHON" setup.py install
-	"$PYTHON" test.py
+	"$PYTHON" test_pycrypt.py
 	if [[ "$2" = "sdist" && "$SOURCE" = TRUE ]]; then
 		twine upload --skip-existing --config-file .pypirc -r pypi dist/*.whl dist/*.tar.*
 	else

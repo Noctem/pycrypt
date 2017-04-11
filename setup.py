@@ -16,12 +16,13 @@ pycrypt = Extension('pycrypt',
                   language='c')
 
 setup (name = 'pycrypt',
-       version = '0.5.0',
+       version = '0.5.1',
        description = 'Fast TwoFish encryption.',
        long_description = 'A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
        author='David Christenson',
        author_email='mail@noctem.xyz',
+       license='MIT',
        classifiers=[
            'Development Status :: 4 - Beta',
            'Intended Audience :: Developers',
@@ -34,6 +35,7 @@ setup (name = 'pycrypt',
            'Programming Language :: Python :: 3.5',
            'Programming Language :: Python :: 3.6',
            'Topic :: Security :: Cryptography',
+           'License :: OSI Approved :: MIT License'
        ],
        keywords='pycrypt twofish pogo encryption',
        ext_modules = [pycrypt])

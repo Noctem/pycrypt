@@ -1,17 +1,3 @@
-// Copyright (c) 2017
-//
-// Noctem / HatchingEgg
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-// OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONIN-
-// FRINGEMENT.
-// IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
-// ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-// TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
-// OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-// ---
-
 #define PY_SSIZE_T_CLEAN
 
 #include <Python.h>
@@ -29,12 +15,6 @@
 #define ARG_TYPES "s#I"
 #endif
 
-Twofish_Byte enc_key[KEY_SIZE] = { // 1.29.1
-    0x4F, 0xEB, 0x1C, 0xA5, 0xF6, 0x1A, 0x67, 0xCE, 0x43, 0xF3, 0xF0,
-    0x0C, 0xB1, 0x23, 0x88, 0x35, 0xE9, 0x8B, 0xE8, 0x39, 0xD8, 0x89,
-    0x8F, 0x5A, 0x3B, 0x51, 0x2E, 0xA9, 0x47, 0x38, 0xC4, 0x14,
-};
-
 Twofish_key KEY;
 
 static PyObject *pycrypt(PyObject *self, PyObject *args) {
@@ -45,7 +25,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   Twofish_Byte xor_byte[BLOCK_SIZE], i, block_count;
   unsigned short offset, output_size;
 #ifdef _WIN32
-  Twofish_Byte * output;
+  Twofish_Byte *output;
   PyObject *output_bytes;
 #endif
 
@@ -64,7 +44,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
   output_size = 4 + (block_count * 256) + 1;
 
 #ifdef _WIN32
-  output = (Twofish_Byte *)_malloca( output_size );
+  output = (Twofish_Byte *)_malloca(output_size);
 #else
   Twofish_Byte output[output_size];
 #endif
@@ -90,7 +70,7 @@ static PyObject *pycrypt(PyObject *self, PyObject *args) {
 
 #ifdef _WIN32
   output_bytes = PyBytes_FromStringAndSize((char *)output, output_size);
-  _freea( output );
+  _freea(output);
   return output_bytes;
 #else
   return PyBytes_FromStringAndSize((char *)output, output_size);
@@ -113,19 +93,23 @@ static struct PyModuleDef pycryptmodule = {
 
 #define INITERROR return NULL
 
-PyMODINIT_FUNC
-PyInit_pycrypt(void)
-
+PyMODINIT_FUNC PyInit_pycrypt(void)
 #else
 #define INITERROR return
 
-void
-initpycrypt(void)
+void initpycrypt(void)
 #endif
 {
   PyObject *module;
+  Twofish_Byte enc_key[KEY_SIZE] = {
+      0x4F, 0xEB, 0x1C, 0xA5, 0xF6, 0x1A, 0x67, 0xCE, 0x43, 0xF3, 0xF0,
+      0x0C, 0xB1, 0x23, 0x88, 0x35, 0xE9, 0x8B, 0xE8, 0x39, 0xD8, 0x89,
+      0x8F, 0x5A, 0x3B, 0x51, 0x2E, 0xA9, 0x47, 0x38, 0xC4, 0x14,
+  };
+
   Twofish_initialise();
   Twofish_prepare_key(enc_key, KEY_SIZE, &KEY);
+
 #if PY_MAJOR_VERSION >= 3
   module = PyModule_Create(&pycryptmodule);
 #else
