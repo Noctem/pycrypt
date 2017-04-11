@@ -31,7 +31,7 @@ else
 	macbuild 3 sdist
 	echo "Successfully uploaded Python 3.6 wheel and source."
 
-	brew install python
+	brew install python || brew upgrade python
 	macbuild 2
 
 	cd travis
