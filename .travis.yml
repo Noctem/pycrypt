@@ -4,14 +4,12 @@ matrix:
     os: linux
     dist: trusty
     language: python
-    python: 3.6
     sudo: required
     env: DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
   - services: docker
     os: linux
     dist: trusty
     language: python
-    python: 3.6
     sudo: required
     env: DOCKER_IMAGE=quay.io/pypa/manylinux1_i686 PRE_CMD=linux32
   - os: osx
@@ -24,19 +22,24 @@ matrix:
     osx_image: xcode8.2
     language: generic
     env: SOURCE=TRUE
-
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install python3 || brew upgrade python3; fi
-  - if [[ -n "$DOCKER_IMAGE" ]]; then docker pull $DOCKER_IMAGE; fi
-  - pip3 install -U setuptools
-
-install: if [[ -z "$DOCKER_IMAGE" ]]; then python3 setup.py install; else docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; fi
-
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install python3 || brew
+  upgrade python3; pip3 install -U setuptools cython; fi
+- if [[ -n "$DOCKER_IMAGE" ]]; then docker pull $DOCKER_IMAGE; fi
+install: if [[ -z "$DOCKER_IMAGE" ]]; then python3 setup.py install; else docker run
+  --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; fi
 script:
-- if [[ -z "$DOCKER_IMAGE" ]]; then python3 test_pycrypt.py; else docker run --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; ls wheelhouse/*; fi
-
+- if [[ -z "$DOCKER_IMAGE" ]]; then python3 test_pycrypt.py; else docker run --rm
+  -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; ls wheelhouse/*;
+  fi
 deploy:
   provider: script
   script: travis/deploy.sh
   on:
     tags: true
+env:
+  global:
+    - secure: LLZb0bTlwdL2AV/SPd4UNVG49Hp/yRUsRiak0f/vXunuRpGNFkWbi00tGvYjFcKZUkGcMkv5MgsthGS2BMVsHwTe8QIVpIM0+CzW5wx3LIKaCYNPweqtC0kjtIP0pbctyYqR9jT5kxpJh5iufgJxGIcLIXwh5fWg68E8OYGHS2TGMoQQn0/IQb9TQMRTWHmGti/vU1WgG19bOX9U0+MEMq85QJUHc9IJGTr6Hy8POC4iXV73oFO1eKcjOMVcikTf7jZhrhuumFszz49HMFlv4Onc8dcL0nnTaBZnamPJ6ZIAv8vUUeBfcyxBqZXceBBiJtT1oZRP4VyXjVPqMQ1iPo7b64R4+h2hvIvWe+4MKai3c9yF0TQA6dAzrw/Jn/1OiIYeqevMHpWaam2Fu2HkQYmVZqBDEH5t0kMugF9Ph8LuACoaZjlwURT2cQICrhZWIxdrRrQ6kAPSy1T5cBLHN9fQLaLzfe+g7KWBJenXbx6zSmgTVcFAc8egSyfBpZwEysmmXr8o84+XVGYhIdDGG/uEqVpWr4Kr1N8MWZbH8j7lkObfhu9wBC2aFtX6tpZB7nlJ5dvEe55J8WjJUUuPBwJUpVivcZd1ztaJ21pDUO+Of269FbHsCMg0bKSlWHUca0G9MYz1CPKC/Tn2opOKpgNLxWfYrF5Zva24Njla1Vs=
+    - TWINE_REPOSITORY: https://pypi.python.org/pypi
+    - TWINE_REPOSITORY_URL: https://pypi.python.org/pypi
+    - TWINE_USERNAME: Noctem

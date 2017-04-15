@@ -171,6 +171,9 @@
  */
 #include "twofish.h"
 #include <string.h> /* for memset(), memcpy(), and memcmp() */
+#include <Python.h>
+#include "pycrypt.h"
+
 
 /*
  * PLATFORM FIXES
@@ -183,39 +186,6 @@
  * portable definitions that you can substitute here without changing the
  * rest of the code.
  */
-
-/*
- * Function called if something is fatally wrong with the implementation.
- * This fatal function is called when a coding error is detected in the
- * Twofish implementation, or when somebody passes an obviously erroneous
- * parameter to this implementation. There is not much you can do when
- * the code contains bugs, so we just stop.
- *
- * The argument is a string. Ideally the fatal function prints this string
- * as an error message. Whatever else this function does, it should never
- * return. A typical implementation would stop the program completely after
- * printing the error message.
- *
- * This default implementation is not very useful,
- * but does not assume anything about your environment.
- * It will at least let you know something is wrong....
- * I didn't want to include any libraries to print and error or so,
- * as this makes the code much harder to integrate in a project.
- *
- * Note that the Twofish_fatal function may not return to the caller.
- * Unfortunately this is not something the self-test can test for,
- * so you have to make sure of this yourself.
- *
- * If you want to call an external function, be careful about including
- * your own header files here. This code uses a lot of macros, and your
- * header file could easily break it. Maybe the best solution is to use
- * a separate extern statement for your fatal function.
- */
-#define Twofish_fatal(msg)                                                     \
-  {                                                                            \
-    for (;;)                                                                   \
-      ;                                                                        \
-  }
 
 /*
  * The rest of the settings are not important for the functionality
@@ -1091,6 +1061,7 @@ static UInt32 h(int k, Byte L[], int kCycles) {
   default:
     /* This is always a coding error, which is fatal. */
     Twofish_fatal("Twofish h(): Illegal argument");
+    return -1;
   }
 }
 

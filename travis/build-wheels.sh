@@ -3,8 +3,9 @@
 set -e -x
 
 # Compile wheels
-for PYBIN in /opt/python/cp*/bin; do
-	"${PYBIN}/pip" wheel /io/ -w wheelhouse/
+for PIP in /opt/python/cp*/bin/pip; do
+	"$PIP" install -U cython
+	"$PIP" wheel /io/ -w wheelhouse/
 done
 
 # Bundle external shared libraries into the wheels
