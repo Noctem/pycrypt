@@ -38,14 +38,15 @@ cdef void initialize():
 
 
 def pycrypt(bytes input_, Twofish_UInt32 iv):
-    cdef Twofish_UInt32 state = iv
-
     cdef Twofish_Byte xor_byte[BLOCK_SIZE]
     cdef Twofish_Byte i, block_count
     cdef unsigned short offset, output_size
+
     cdef Py_ssize_t length
     cdef char* plaintext
     PyBytes_AsStringAndSize(input_, &plaintext, &length)
+
+    cdef Twofish_UInt32 state = iv
 
     for i in range(BLOCK_SIZE):
         state = (0x41C64E6D * state) + 0x3039
@@ -53,16 +54,16 @@ def pycrypt(bytes input_, Twofish_UInt32 iv):
 
     block_count = (length + 256) // 256
     output_size = 4 + (block_count * 256) + 1
+
     cdef Twofish_Byte* output = <Twofish_Byte*> PyMem_Malloc(output_size)
 
     output[0] = iv >> 24
     output[1] = iv >> 16
     output[2] = iv >> 8
     output[3] = iv
-    
     memcpy(output + 4, plaintext, length);
     memset(output + 4 + length, 0, 256 - length % 256)
-    output[output_size - 2] = <Twofish_Byte>(256 - length % 256)
+    output[output_size - 2] = 256 - length % 256
 
     for offset in range(0, block_count * 256, BLOCK_SIZE):
         for i in range(BLOCK_SIZE):
@@ -72,6 +73,7 @@ def pycrypt(bytes input_, Twofish_UInt32 iv):
         memcpy(xor_byte, output + 4 + offset, BLOCK_SIZE)
 
     output[output_size - 1] = INTEGRITY_BYTE
+
     cdef bytes encrypted = output[:output_size]
     PyMem_Free(output)
     return encrypted

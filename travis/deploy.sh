@@ -31,10 +31,8 @@ else
 	brew install python || brew upgrade python
 	macbuild 2
 
-	cd travis
 	brew uninstall python3
 	brew install https://raw.githubusercontent.com/Noctem/pogeo-toolchain/master/python35.rb
-	cd ..
 	echo "Successfully installed Python 3.5."
 
 	macbuild 3
