@@ -1,5 +1,4 @@
 include twofish.h
-include pycrypt.h
 include pycrypt.c
 include pycrypt.pyx
 include twofish.pxd

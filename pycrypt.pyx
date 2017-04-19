@@ -2,8 +2,6 @@
 #cython: language_level=3
 
 from libc.string cimport memcpy, memset
-from libc.stdlib cimport exit
-from libc.stdio cimport printf
 
 from cpython cimport PyBytes_AsStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
@@ -19,11 +17,6 @@ cdef Twofish_key KEY
 
 
 initialize()
-
-
-cdef public void Twofish_fatal(char* msg):
-    printf('%s\n', msg);
-    exit(1)
 
 
 cdef void initialize():
