@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from setuptools import setup, Extension
-from Cython.Build import cythonize
 
 try:
     from Cython.Build import cythonize
@@ -16,7 +15,7 @@ except ImportError:
                               "twofish.c"])]
 
 setup (name = 'pycrypt',
-       version = '0.6.0',
+       version = '0.6.1',
        description = 'Fast TwoFish encryption.',
        long_description = 'A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
