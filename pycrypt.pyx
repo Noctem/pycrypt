@@ -13,7 +13,7 @@ ctypedef unsigned short uint16_t
 DEF BLOCK_SIZE = 16
 DEF INTEGRITY_BYTE = 0x23
 DEF KEY_SIZE = 32
-DEF XBOX_SIZE = 258
+DEF XBOX_SIZE = 256
 
 cdef Twofish_key KEY
 
@@ -38,7 +38,6 @@ cdef void encrypt_cipher(Twofish_Byte* src, uint16_t size):
         Twofish_Byte v4, v5, v7, v9, v10
 
     xbox = [
-        0x01, 0x00,
         0x83, 0x57, 0x47, 0x28, 0x1c, 0x84, 0x5c, 0xf0, 0x25, 0xcc, 0x14, 0xd1, 0xe4, 0xe0, 0x4b, 0x4c,
         0x68, 0x20, 0x72, 0x37, 0x34, 0x7b, 0x23, 0xf3, 0x7d, 0x62, 0x8c, 0xa7, 0xe2, 0xa8, 0x88, 0x6e,
         0x27, 0x74, 0x3e, 0x94, 0x2a, 0x6d, 0x3b, 0xa5, 0x7a, 0x41, 0xa3, 0x13, 0x8b, 0x31, 0x42, 0x09,
@@ -58,20 +57,20 @@ cdef void encrypt_cipher(Twofish_Byte* src, uint16_t size):
 
     a4 = size - 1
     srci = 0
-    v4 = xbox[0]
-    v5 = xbox[1]
+    v4 = 0x01
+    v5 = 0x00
 
     while a4 != 0:
         a4 -= 1
-        srci += 1
 
-        v7 = xbox[2 + v4]
+        v7 = xbox[v4]
         v5 = <Twofish_Byte>(v5 + v7)
-        v9 = xbox[2 + v5]
-        xbox[2 + v4] = v9
-        xbox[2 + v5] = v7
+        v9 = xbox[v5]
+        xbox[v4] = v9
+        xbox[v5] = v7
         v10 = <Twofish_Byte>(v9 + v7)
-        src[srci] ^= xbox[2 + v10]
+        src[srci] ^= xbox[v10]
+        srci += 1
         v4 = <Twofish_Byte>(v4 + 1)
 
 
@@ -101,7 +100,7 @@ def pycrypt(bytes input_, Twofish_UInt32 iv):
     output[3] = iv
     memcpy(output + 4, plaintext, length);
     memset(output + 4 + length, 0, 256 - length % 256)
-    output[output_size - 2] = <Twofish_Byte>(256 - length % 256)
+    output[output_size - 2] = (256 - length % 256)
 
     for offset in range(0, block_count * 256, BLOCK_SIZE):
         for i in range(BLOCK_SIZE):
