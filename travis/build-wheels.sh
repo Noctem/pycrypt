@@ -5,12 +5,12 @@ set -e -x
 # Compile wheels
 for PIP in /opt/python/cp*/bin/pip; do
 	"$PIP" install -U cython
-	"$PIP" wheel /io/ -w wheelhouse/
+	"$PIP" wheel -v /io/ -w wheelhouse/
 done
 
 # Bundle external shared libraries into the wheels
 for whl in wheelhouse/*.whl; do
-	auditwheel repair "$whl" -w /io/wheelhouse/
+	auditwheel repair "$whl" -w /io/wheelhouse/ || auditwheel -v show "$WHL"
 done
 
 # Install packages and test

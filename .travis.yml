@@ -15,13 +15,25 @@ matrix:
   - os: osx
     osx_image: xcode6.4
     language: generic
+    cache:
+      directories:
+        - "$HOME/.cache/pip"
+        - "$HOME/Library/Caches/Homebrew"
   - os: osx
     osx_image: xcode7.3
     language: generic
+    cache:
+      directories:
+        - "$HOME/.cache/pip"
+        - "$HOME/Library/Caches/Homebrew"
   - os: osx
     osx_image: xcode8.3
     language: generic
     env: SOURCE=TRUE
+    cache:
+      directories:
+        - "$HOME/.cache/pip"
+        - "$HOME/Library/Caches/Homebrew"
 before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install python3 || brew
   upgrade python3; pip3 install -U setuptools cython; fi
@@ -29,8 +41,7 @@ before_install:
 install: if [[ -z "$DOCKER_IMAGE" ]]; then python3 setup.py install; else docker run
   --rm -v `pwd`:/io $DOCKER_IMAGE $PRE_CMD /io/travis/build-wheels.sh; fi
 script:
-- if [[ -z "$DOCKER_IMAGE" ]]; then python3 test_pycrypt.py; else ls wheelhouse/*;
-  fi
+- if [[ -z "$DOCKER_IMAGE" ]]; then python3 test_pycrypt.py; else ls wheelhouse/*; fi
 deploy:
   provider: script
   script: travis/deploy.sh
