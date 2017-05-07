@@ -1,8 +1,6 @@
-from libc.stdint cimport uint8_t, uint32_t
-
 cdef extern from "twofish.h" nogil:
-    ctypedef uint8_t Twofish_Byte
-    ctypedef uint32_t Twofish_UInt32
+    ctypedef unsigned char Twofish_Byte
+    ctypedef unsigned long Twofish_UInt32
 
     ctypedef struct Twofish_key:
         Twofish_UInt32 s[4][256]

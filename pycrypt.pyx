@@ -1,13 +1,14 @@
 # distutils: language = c
 # cython: language_level=3
 
-from libc.stdint cimport uint16_t
 from libc.string cimport memcpy, memset
 
 from cpython cimport PyBytes_AsStringAndSize
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 from twofish cimport Twofish_Byte, Twofish_UInt32, Twofish_key, Twofish_initialise, Twofish_prepare_key, Twofish_encrypt
+
+ctypedef unsigned short uint16_t
 
 DEF BLOCK_SIZE = 16
 DEF INTEGRITY_BYTE = 0x23
