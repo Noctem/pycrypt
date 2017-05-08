@@ -2,6 +2,8 @@
 
 set -e -x
 
+export TRAVIS=true
+
 # Compile wheels
 for PIP in /opt/python/cp*/bin/pip; do
 	"$PIP" install -U cython

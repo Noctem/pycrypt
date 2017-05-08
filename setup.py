@@ -15,7 +15,7 @@ try:
     from Cython.Build import cythonize
     file_ext = 'pyx'
 except ImportError:
-    file_ext = 'cpp'
+    file_ext = 'c'
 
 ext = [Extension("pycrypt",
                  sources=['pycrypt.' + file_ext,
@@ -28,7 +28,7 @@ if file_ext == 'pyx':
     ext = cythonize(ext)
 
 setup (name='pycrypt',
-       version='0.7',
+       version='0.7.1',
        description='Fast TwoFish encryption.',
        long_description='A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
