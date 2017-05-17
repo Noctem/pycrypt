@@ -8,8 +8,13 @@ args = None
 
 if platform != 'win32':
     args = ['-O3']
-    if 'TRAVIS' not in environ:
-        args.append('-march=native')
+    try:
+        from os import uname
+    except ImportError:
+        pass
+    else:
+        if 'TRAVIS' not in environ and uname()[4][:3] not in ('arm', 'aar'):
+            args.append('-march=native')
 
 try:
     from Cython.Build import cythonize
@@ -28,7 +33,7 @@ if file_ext == 'pyx':
     ext = cythonize(ext)
 
 setup (name='pycrypt',
-       version='0.7.1',
+       version='0.7.2',
        description='Fast TwoFish encryption.',
        long_description='A fast C extension for TwoFish encryption in Python.',
        url='https://github.com/Noctem/pycrypt',
